@@ -1,0 +1,16 @@
+{
+  "sourceRepository": "https://github.com/Ashwin-Iyer1/7110A_Code",
+  "originalCodeCommit": "e3d7960af0ead4ad6b2c89cbdcb92fa4ca036cc6",
+  "reviewedLocalCompanionCommit": "d26b16ec9eecdcb46a01adc0ba33bfc4b78da608",
+  "sourceFileSha256": {
+    "index.html": "64b29cb732ff21989a7c01a25bab52d29ae59e6e951150d07c420a12113148ff",
+    "app.mjs": "2169b7b48b074b8890356afd4cc86115d8d8cf5664ccfb444a7527652d9a569d",
+    "model.mjs": "2c50d4948438914acedf283f404542317cbbf0b288afff5f014db3900bca2fc2",
+    "style.css": "6b32e42c5cbd0dc3ff1cad4692859faccf2457ab6bc5af60f50a03c9fb15366c"
+  },
+  "hostChanges": [
+    "index.html source/review links rewritten",
+    "SOURCE_REVIEW.md companion publication note appended"
+  ],
+  "authorship": "Team code; original attribution preserved. Simulator plant assumptions are hypothetical."
+}
