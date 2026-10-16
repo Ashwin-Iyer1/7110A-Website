@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>7110A · Drivetrain Lab</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <a href="#main">7110A <span>/ DRIVETRAIN LAB</span></a
+      ><span class="badge">LOCAL SIMULATION · ARCHIVED SOURCE</span>
+    </header>
+    <main id="main">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">GEOMETRY → MOTION → CONTROL</p>
+          <h1>Know the motion<br />before the <em>motor.</em></h1>
+          <p>
+            Explore differential-drive geometry and bounded heading control,
+            using dimensions recorded in the 7110A competition code.
+          </p>
+        </div>
+        <div class="note">
+          <strong>3.25″ / 0.75 / 11.5″</strong>
+          <p>
+            Wheel diameter, wheel-to-motor ratio, track width.<br />Source-backed
+            geometry. Explicitly assumed dynamics.
+          </p>
+          <a href="#method">Read the model and source review ↗</a>
+        </div>
+      </section>
+      <div class="workspace">
+        <aside class="panel">
+          <p class="eyebrow">01 / EXPERIMENT</p>
+          <label for="mode">Experiment</label
+          ><select id="mode">
+            <option value="path">Wheel-command trajectory</option>
+            <option value="turn">Heading controller</option>
+          </select>
+          <div id="path-controls">
+            <label for="preset">Command preset</label
+            ><select id="preset">
+              <option value="arc">Constant-radius arc</option>
+              <option value="straight">Straight line</option>
+              <option value="pivot">Pivot in place</option>
+              <option value="square">Square path</option></select
+            ><label for="segments">Editable motor-command CSV</label
+            ><textarea id="segments" rows="6" spellcheck="false"></textarea>
+            <p class="muted">
+              Motor RPM on each side; duration in seconds. Up to 20 segments, 30
+              seconds total. Ideal rolling model.
+            </p>
+          </div>
+          <div id="turn-controls" hidden>
+            <label for="target">Target heading (degrees)</label
+            ><input id="target" type="number" min="-180" max="180" value="90" />
+            <div class="three">
+              <label
+                >Kp<input
+                  id="kp"
+                  type="number"
+                  min="0"
+                  max="10"
+                  step=".01"
+                  value=".285" /></label
+              ><label
+                >Ki<input
+                  id="ki"
+                  type="number"
+                  min="0"
+                  max="5"
+                  step=".01"
+                  value=".10" /></label
+              ><label
+                >Kd<input
+                  id="kd"
+                  type="number"
+                  min="0"
+                  max="2"
+                  step=".001"
+                  value=".0225"
+              /></label>
+            </div>
+            <label for="timeout">Timeout (seconds)</label
+            ><input
+              id="timeout"
+              type="number"
+              min=".2"
+              max="15"
+              step=".2"
+              value="4"
+            /><label for="limit">Output limit (%)</label
+            ><input id="limit" type="number" min="1" max="100" value="80" />
+            <details>
+              <summary>Assumed motor response</summary>
+              <label for="maxRPM">Maximum motor RPM</label
+              ><input
+                id="maxRPM"
+                type="number"
+                min="1"
+                max="600"
+                value="600"
+              /><label for="tau">Response time constant (seconds)</label
+              ><input
+                id="tau"
+                type="number"
+                min=".01"
+                max="2"
+                step=".01"
+                value=".15"
+              /><label for="leftEfficiency">Left effectiveness (0–1)</label
+              ><input
+                id="leftEfficiency"
+                type="number"
+                min="0"
+                max="1"
+                step=".05"
+                value="1"
+              /><label for="rightEfficiency">Right effectiveness (0–1)</label
+              ><input
+                id="rightEfficiency"
+                type="number"
+                min="0"
+                max="1"
+                step=".05"
+                value="1"
+              />
+              <p class="muted">
+                These are hypothetical plant parameters, not measured robot
+                characteristics.
+              </p>
+            </details>
+          </div>
+          <details>
+            <summary>Recorded geometry</summary>
+            <label for="diameter">Wheel diameter (inches)</label
+            ><input
+              id="diameter"
+              type="number"
+              min=".1"
+              max="12"
+              step=".05"
+              value="3.25"
+            /><label for="ratio">Wheel turns / motor turn</label
+            ><input
+              id="ratio"
+              type="number"
+              min=".01"
+              max="4"
+              step=".01"
+              value=".75"
+            /><label for="track">Track width (inches)</label
+            ><input
+              id="track"
+              type="number"
+              min=".1"
+              max="36"
+              step=".1"
+              value="11.5"
+            />
+          </details>
+          <button id="run">Run experiment →</button>
+          <p id="message" role="status"></p>
+        </aside>
+        <div class="results">
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">02 / TRAJECTORY</p>
+                <h2>Follow the pose.</h2>
+              </div>
+              <span id="status" class="badge">READY</span>
+            </div>
+            <div class="metrics">
+              <div>
+                <strong id="elapsed">—</strong><span>elapsed seconds</span>
+              </div>
+              <div>
+                <strong id="travel">—</strong><span>center travel, inches</span>
+              </div>
+              <div>
+                <strong id="angle">—</strong><span>final angle, degrees</span>
+              </div>
+            </div>
+            <svg
+              id="trajectory"
+              viewBox="0 0 720 420"
+              role="img"
+              aria-label="Robot center path in inches with selected pose and heading"
+            ></svg>
+            <p class="caption">
+              Equal horizontal and vertical scale. +x starts forward; positive
+              angles rotate counterclockwise. The arrow shows heading; the
+              rectangle is a schematic robot footprint.
+            </p>
+            <label for="scrub"
+              >Replay sample <output id="sample-value"></output></label
+            ><input id="scrub" type="range" min="0" max="0" value="0" />
+            <p id="pose" class="muted"></p>
+          </section>
+          <section class="panel">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">03 / RESPONSE</p>
+                <h2 id="response-title">Wheel commands over time</h2>
+              </div>
+              <div class="exports">
+                <button id="json">JSON ↓</button><button id="csv">CSV ↓</button>
+              </div>
+            </div>
+            <svg
+              id="response"
+              viewBox="0 0 720 230"
+              role="img"
+              aria-label="Time series for the selected experiment"
+            ></svg>
+            <p id="response-note" class="caption"></p>
+            <div id="conversion" class="conversion"></div>
+          </section>
+        </div>
+      </div>
+      <section id="method" class="method">
+        <div>
+          <p class="eyebrow">SOURCE & LIMITS</p>
+          <h2>Math you can inspect.<br />Assumptions you can change.</h2>
+          <a href="https://github.com/Ashwin-Iyer1/7110A_Code/blob/e3d7960af0ead4ad6b2c89cbdcb92fa4ca036cc6/Competition/src/main.cpp"
+            >Original competition source ↗</a
+          >
+        </div>
+        <div>
+          <h3>Geometry is grounded in the archive.</h3>
+          <p>
+            The original code records a 3.25-inch wheel, 36/48 gear ratio and
+            11.5-inch track. The lab preserves its distance-to-motor-angle
+            conversion. Each simulated pose step integrates constant left/right
+            wheel travel along an exact circular arc.
+          </p>
+          <h3>The controller is an educational model.</h3>
+          <p>
+            Initial gains match the original smartTurn values. The lab adds
+            output saturation, conditional integral accumulation, derivative on
+            measured heading, a timeout and a sustained settling condition.
+            Motor response and side effectiveness are explicit assumptions. This
+            is not a calibrated digital model of the robot.
+          </p>
+          <h3>The competition code remains an archive.</h3>
+          <p>
+            The repository contains team contributions, including KDalela and
+            the original author headers. The lab does not modify or flash that
+            firmware. Source-review notes document ignored time units,
+            negative-distance termination and unbounded collision waits for a
+            future hardware-tested revision.
+          </p>
+          <a href="./SOURCE_REVIEW.md">Read the concrete source findings ↗</a>
+        </div>
+      </section>
+    </main>
+    <footer>
+      7110A / Local educational workbench
+      <span>No robot connection · No hardware performance claim</span>
+    </footer>
+    <script type="module" src="app.mjs"></script>
+  </body>
+</html>
